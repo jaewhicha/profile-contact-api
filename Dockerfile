@@ -1,15 +1,21 @@
-FROM node:8.11-alpine
+FROM node:15.14-alpine
 
+# Create app directory
 WORKDIR /usr/src/app
 
-ARG NODE_ENV
-ENV NODE_ENV $NODE_ENV
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package*.json ./
 
-COPY package*.json /usr/src/app/
-RUN npm install
+# If you are building your code for production
+RUN yarn install --prod
 
-COPY . /usr/src/app
+# Bundle app source
+COPY . .
 
-ENV PORT 5000
-EXPOSE $PORT
-CMD [ "npm", "start" ]
+EXPOSE 3000
+
+ENV DEPLOY_ENV=prod
+
+CMD [ "node", "./bin/www" ]
