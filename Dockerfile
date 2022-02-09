@@ -16,6 +16,4 @@ COPY . .
 
 EXPOSE 3000
 
-ENV DEPLOY_ENV=prod
-
 CMD [ "node", "./bin/www" ]

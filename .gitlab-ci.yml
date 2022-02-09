@@ -92,7 +92,7 @@ deploy:
     - gcloud config set project $GCP_PROJECT
     - gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
   script:
-    - gcloud run deploy $GCP_SERVICE_NAME --image $GCP_DOCKER_REGION/$GCP_PROJECT/$GCP_DOCKER_REPO/$DOCKER_IMAGE --platform managed --region $GCP_REGION --allow-unauthenticated
+    - gcloud run deploy $GCP_SERVICE_NAME --image $GCP_DOCKER_REGION/$GCP_PROJECT/$GCP_DOCKER_REPO/$DOCKER_IMAGE --platform managed --region $GCP_REGION --allow-unauthenticated --set-env-vars=[DEPLOY_ENV=prod,API_KEY_SECRET_NAME=$SECRET_NAME]
     - echo "ENVIRONMENT_URL=$(gcloud run services list --platform managed --region $GCP_REGION | grep $GCP_SERVICE_NAME | awk '{print $4}')" >> deploy.env
   environment:
     name: production
