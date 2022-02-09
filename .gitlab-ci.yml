@@ -3,3 +3,110 @@ stages:
   - test
   - build
   - deploy
+
+install:
+  stage: install
+  image: node:15
+  script:
+    - yarn install
+  cache:
+    key:
+      files:
+        - yarn.lock
+    paths:
+      - node_modules/
+
+# lint:
+#   stage: test
+#   image: node:15
+#   before_script:
+#     - yarn install
+#   needs: ["install"]
+#   cache:
+#     key:
+#       files:
+#         - yarn.lock
+#     policy: pull
+#     paths:
+#       - node_modules/
+#   script:
+#     - yarn eslint .
+#   dependencies:
+#     - install
+
+# test:
+#   stage: test
+#   image: node:15
+#   before_script:
+#     - yarn install
+#   needs: ["install"]
+#   cache:
+#     key:
+#       files:
+#         - yarn.lock
+#     policy: pull
+#     paths:
+#       - node_modules/
+#   script:
+#     - yarn test
+#   dependencies:
+#     - install
+
+build:
+  image: google/cloud-sdk:alpine
+  services:
+    - docker:stable-dind
+  variables:
+    DOCKER_IMAGE: $IMAGE_NAME-$CI_COMMIT_SHORT_SHA
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+
+  before_script:
+    - base64 -d $GCP_SA_KEY > ${HOME}/gcloud-service-key.json    
+    - gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+    - gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://gcr.io
+    - gcloud config set project $GCP_PROJECT
+    - gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+  script:
+    - sleep 30
+    - docker info
+    - docker build -t $DOCKER_IMAGE .
+    - docker tag $DOCKER_IMAGE $GCP_DOCKER_REGION/$GCP_PROJECT/$GCP_DOCKER_REPO/$DOCKER_IMAGE
+    - docker push $GCP_DOCKER_REGION/$GCP_PROJECT/$GCP_DOCKER_REPO/$DOCKER_IMAGE
+  stage: build
+  dependencies:
+    - isntall
+    # - lint
+    # - test
+
+deploy:
+  image: google/cloud-sdk:alpine
+  stage: deploy
+  services:
+    - docker:stable-dind
+  before_script:
+    - base64 -d $GCP_SA_KEY > ${HOME}/gcloud-service-key.json    
+    - gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+    - gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://gcr.io
+    - gcloud config set project $GCP_PROJECT
+    - gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+  script:
+    - gcloud run deploy $GCP_SERVICE_NAME --image $GCP_DOCKER_REGION/$GCP_PROJECT/$GCP_DOCKER_REPO/$DOCKER_IMAGE --platform managed --region $GCP_REGION --allow-unauthenticated
+    - echo "ENVIRONMENT_URL=$(gcloud run services list --platform managed --region $GCP_REGION | grep $GCP_SERVICE_NAME | awk '{print $4}')" >> deploy.env
+  environment:
+    name: production
+    url: $ENVIRONMENT_URL_PROD
+  artifacts:
+    reports:
+      dotenv: deploy.env
+  dependencies:
+    - build
+  variables:
+    DOCKER_IMAGE: $IMAGE_NAME-$CI_COMMIT_SHORT_SHA
+    GCP_SERVICE_NAME: $GCP_SERVICE-prod
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - when: never

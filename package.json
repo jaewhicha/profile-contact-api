@@ -17,5 +17,8 @@
     "node-uuid": "^1.4.8",
     "passport": "^0.5.0",
     "passport-headerapikey": "^1.2.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.8.0"
   }
 }
