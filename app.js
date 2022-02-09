@@ -28,7 +28,9 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 passport.use(new headerApiKeyStrat(
-    {},
+    {
+        header: 'X-Api-Key'
+    },
     false,
     (apiKey, done) => {
         if(API_KEY === apiKey) {
