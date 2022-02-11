@@ -35,10 +35,8 @@ passport.use(new headerApiKeyStrat(
     false,
     (apiKey, done) => {
         if(API_KEY === apiKey) {
-            logger.info('API key matches!')
             return done(null, true);
         } else {
-            logger.info('API Key does not match!')
             return done(null, false, { message: 'No or incorrect API Key provided.' });
         }
     }

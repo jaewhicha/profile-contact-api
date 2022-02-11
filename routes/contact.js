@@ -38,6 +38,7 @@ router.post('/submit', (req, res, next) => {
 });
 
 router.get('/entries', passport.authenticate('headerapikey', { session: false }), (req, res, next) => {
+  logger.info('Authenticated properly!')
   firestoreService.getContacts()
     .then((result) => {
       try {
