@@ -1,5 +1,6 @@
 var express = require('express');
 var passport = require('passport');
+var logger = require('../services/logger-service')
 var firestoreService = require('../services/firestore-service');
 var valdiationService = require('../services/validation-service');
 
@@ -23,10 +24,15 @@ router.post('/submit', (req, res, next) => {
   var contactInfo = valdiationService.parseAndValidateContact(req.body);
   firestoreService.sumbmitContact(contactInfo)
     .then((result) => {
-      res.setHeader(traceId, req['id']);
-      res.send(result);
+      try {
+        res.setHeader(traceId, req['id']);
+        res.send(result);
+      } catch (error) {
+        logger.error('Error sending POST /submit response.', error);
+      }
     })
     .catch((error) => {
+      logger.error(error);
       res.status(500).send(error);
     });
 });
@@ -34,10 +40,15 @@ router.post('/submit', (req, res, next) => {
 router.get('/entries', passport.authenticate('headerapikey', { session: false }), (req, res, next) => {
   firestoreService.getContacts()
     .then((result) => {
-      res.setHeader(traceId, req['id']);
-      res.send(result);
+      try {
+        res.setHeader(traceId, req['id']);
+        res.send(result);
+      } catch (error) {
+        logger.error('Error sending GET /entries response', error);
+      }
     })
     .catch((error) => {
+      logger.error(error);
       res.status(500).send(error.message);
     });
 });

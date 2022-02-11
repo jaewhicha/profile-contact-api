@@ -1,6 +1,7 @@
 var express = require('express');
 var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+var morgan = require('morgan');
+var logger = require('./services/logger-service');
 var uuid = require('node-uuid');
 var passport = require('passport');
 const headerApiKeyStrat = require('passport-headerapikey').HeaderAPIKeyStrategy;
@@ -10,7 +11,7 @@ const secretService = require('./services/secret-service');
 var API_KEY = process.env.ONE_KEY;
 var contactRouter = require('./routes/contact');
 
-logger.token('id', function getId (req) {
+morgan.token('id', function getId (req) {
     return req.id;
 });
 
@@ -21,7 +22,7 @@ if(process.env.DEPLOY_ENV === 'prod') {
 var app = express();
 
 app.use(assignId);
-app.use(logger(':id :remote-addr :method :url :status :response-time ms - :res[content-length]'));
+app.use(morgan(':id :remote-addr :method :url :status :response-time ms - :res[content-length]'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -34,8 +35,10 @@ passport.use(new headerApiKeyStrat(
     false,
     (apiKey, done) => {
         if(API_KEY === apiKey) {
+            logger.info('API key matches!')
             return done(null, true);
         } else {
+            logger.info('API Key does not match!')
             return done(null, false, { message: 'No or incorrect API Key provided.' });
         }
     }
