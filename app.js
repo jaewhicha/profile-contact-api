@@ -8,7 +8,7 @@ const headerApiKeyStrat = require('passport-headerapikey').HeaderAPIKeyStrategy;
  
 const secretService = require('./services/secret-service');
 
-var API_KEY = process.env.ONE_KEY;
+var API_KEY = null;
 var contactRouter = require('./routes/contact');
 
 morgan.token('id', function getId (req) {
@@ -16,8 +16,10 @@ morgan.token('id', function getId (req) {
 });
 
 if(process.env.DEPLOY_ENV === 'prod') {
-    API_KEY = secretService.getApiKey()
+    API_KEY = await secretService.getApiKey()
 }
+
+logger.info('API Key: ' + API_KEY);
 
 var app = express();
 
@@ -29,9 +31,7 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 passport.use(new headerApiKeyStrat(
-    {
-        header: 'X-Api-Key'
-    },
+    {},
     false,
     (apiKey, done) => {
         if(API_KEY === apiKey) {
