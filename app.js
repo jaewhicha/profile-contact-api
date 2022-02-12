@@ -16,7 +16,7 @@ morgan.token('id', function getId (req) {
 });
 
 if(process.env.DEPLOY_ENV === 'prod') {
-    API_KEY = await secretService.getApiKey()
+    API_KEY = secretService.getApiKey()
 }
 
 logger.info('API Key: ' + API_KEY);
@@ -35,9 +35,9 @@ passport.use(new headerApiKeyStrat(
     false,
     (apiKey, done) => {
         if(API_KEY === apiKey) {
-            return done(null, true);
+            done(null, true);
         } else {
-            return done(null, false, { message: 'No or incorrect API Key provided.' });
+            done(null, false, { message: 'No or incorrect API Key provided.' });
         }
     }
 ))
